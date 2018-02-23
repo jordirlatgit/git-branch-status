@@ -295,9 +295,9 @@ function GenerateReport # (local_branch_name remote_branch_name)
 {
   base_branch=$1
   compare_branch=$2
-  does_base_branch_exist=$(DoesBranchExist $base_branch)
-  does_compare_branch_exist=$(DoesBranchExist $compare_branch)
-  is_tracked_branch=$(IsTrackedBranch $base_branch $compare_branch)
+  does_base_branch_exist=$(   DoesBranchExist $base_branch                )
+  does_compare_branch_exist=$(DoesBranchExist $compare_branch             )
+  is_tracked_branch=$(        IsTrackedBranch $base_branch $compare_branch)
 
   # filter heads
   [ "$base_branch" == 'HEAD' ] && return
@@ -312,7 +312,7 @@ function GenerateReport # (local_branch_name remote_branch_name)
        n_behind=$(echo $status | tr " " "\n" | grep -c '^>')
        n_ahead=$( echo $status | tr " " "\n" | grep -c '^<')
        n_divergances=$(($n_behind + $n_ahead))
-       (($were_any_divergances + $n_divergances)) && were_any_divergances=1
+       (( $were_any_divergances + $n_divergances )) && were_any_divergances=1
        were_any_compared=1
 
        # filter branches by status
@@ -344,7 +344,7 @@ function GenerateReport # (local_branch_name remote_branch_name)
        remote_color=$CDEFAULT
   else return
   fi
-  local_msg="$(AppendHeadDate $base_branch)"
+  local_msg="$( AppendHeadDate $base_branch   )"
   remote_msg="$(AppendHeadDate $compare_branch)"
 
   # populate lists
@@ -368,23 +368,23 @@ function PrintReport # (table_header_line synchronized_msg)
 {
   table_header_line=$1
   synchronized_msg=$2
-  available_w=$(($(CurrentTtyW) - $ahead_w - $behind_w - $ALL_PADDING_W))
+  available_w=$(( $(CurrentTtyW) - $ahead_w - $behind_w - $ALL_PADDING_W ))
   n_comparissons=${#local_msgs[@]}
-  (($were_any_compared)) && !(($were_any_divergances)) && all_in_sync=1 || all_in_sync=0
+  (( $were_any_compared )) && !(( $were_any_divergances )) && all_in_sync=1 || all_in_sync=0
 
-  (($available_w    <  0))                          && return # should never happen
-  (($n_comparissons == 0)) && (($all_in_sync == 0)) && return # should never happen
+  (( $available_w    <  0 ))                            && return # should never happen
+  (( $n_comparissons == 0 )) && (( $all_in_sync == 0 )) && return # should never happen
 
   # truncate column widths to fit
-  while (($local_w + $remote_w > $available_w))
-  do    (($local_w >= $remote_w)) && local_w=$(( $local_w  - 1))
-        (($local_w <= $remote_w)) && remote_w=$(($remote_w - 1))
+  while (( $local_w + $remote_w > $available_w ))
+  do    (( $local_w >= $remote_w )) && local_w=$((  $local_w  - 1 ))
+        (( $local_w <= $remote_w )) && remote_w=$(( $remote_w - 1 ))
   done
 
   # pretty print results
   printf "\n  $table_header_line\n"
-  if (($n_comparissons))
-  then rule_w=$(($local_w + $behind_w + $ahead_w + $remote_w + $INNER_PADDING_W))
+  if (( $n_comparissons ))
+  then rule_w=$(( $local_w + $behind_w + $ahead_w + $remote_w + $INNER_PADDING_W ))
        PrintHRule $rule_w
        for (( result_n = 0 ; result_n < $n_comparissons ; result_n++ ))
        do PrintReportLine
@@ -393,23 +393,23 @@ function PrintReport # (table_header_line synchronized_msg)
   fi
 
   # print synchronized message if all compared upstreams had no divergance
-  if (($all_in_sync))
+  if (( $all_in_sync ))
   then l_border="$DELIM " r_border=" $DELIM"
        borders_pad_w=$(( ${#l_border} + ${#r_border} ))
-       wrap_w=$(($(CurrentTtyW) - $MARGINS_PAD_W - $borders_pad_w))
+       wrap_w=$(( $(CurrentTtyW) - $MARGINS_PAD_W - $borders_pad_w ))
        synchronized_msg=$(echo "$synchronized_msg" | fold -s -w $wrap_w | tr ' ' "$JOIN_CHAR")
        rule_w=0
        for line in $synchronized_msg
        do  line=${line/%$JOIN_CHAR/}
            [ ${#line} -gt $rule_w ] && rule_w=${#line}
        done
-       rule_w=$(($rule_w + $MARGINS_PAD_W))
+       rule_w=$(( $rule_w + $MARGINS_PAD_W ))
 
        PrintHRule $rule_w
        for line in $synchronized_msg
        do  line=${line/%$JOIN_CHAR/}
-           pad_w=$(($rule_w - ${#line} - $MARGINS_PAD_W))
-           line_fmt="%$(($MARGIN_PAD_W))s$l_border$CEVEN$line$CEND%$(($pad_w))s$r_border"
+           pad_w=$(( $rule_w - ${#line} - $MARGINS_PAD_W ))
+           line_fmt="%$(( $MARGIN_PAD_W ))s$l_border$CEVEN$line$CEND%$(( $pad_w ))s$r_border"
            printf "$line_fmt\n" | sed "$JOIN_REGEX"
        done
        PrintHRule $rule_w
@@ -421,10 +421,10 @@ function PrintReport # (table_header_line synchronized_msg)
 function PrintReportLine
 {
   # fetch data
-  local_msg=$(  echo ${local_msgs[$result_n]}  | sed "$JOIN_REGEX" )
-  behind_msg=$( echo ${behind_msgs[$result_n]} | sed "$JOIN_REGEX" )
-  ahead_msg=$(  echo ${ahead_msgs[$result_n]}  | sed "$JOIN_REGEX" )
-  remote_msg=$( echo ${remote_msgs[$result_n]} | sed "$JOIN_REGEX" )
+  local_msg=$( echo ${local_msgs[$result_n]}  | sed "$JOIN_REGEX")
+  behind_msg=$(echo ${behind_msgs[$result_n]} | sed "$JOIN_REGEX")
+  ahead_msg=$( echo ${ahead_msgs[$result_n]}  | sed "$JOIN_REGEX")
+  remote_msg=$(echo ${remote_msgs[$result_n]} | sed "$JOIN_REGEX")
   local_msg="${local_msg:0:$local_w}"
   remote_msg="${remote_msg:0:$remote_w}"
   local_color="${local_colors[$result_n]}"
@@ -440,7 +440,7 @@ function PrintReportLine
   end_offset=$((    $remote_w - ${#remote_msg} ))
 
   # build output messages and display
-  if (($(IsCurrentBranch $local_msg))) ; then star=$STAR ; else star=" " ; fi ;
+  if (( $(IsCurrentBranch $local_msg) )) ; then star=$STAR ; else star=" " ; fi ;
   local_msg="%$((  $local_offset  ))s$star$(echo -e $DELIM $local_color$local_msg$CEND  )"
   behind_msg="%$(( $behind_offset ))s $(    echo -e $DELIM $behind_color$behind_msg$CEND)"
   ahead_msg="%$((  $ahead_offset  ))s $(    echo -e $DELIM $ahead_color$ahead_msg$CEND  )"

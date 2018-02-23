@@ -138,7 +138,8 @@ readonly STAR='*'
 readonly DELIM='|'
 readonly NO_UPSTREAM="(no${JOIN_CHAR}upstream)"
 readonly NO_LOCAL="(no${JOIN_CHAR}local)"
-readonly LOCALS_SYNCED_MSG="All tracking branches are synchronized with their upstreams"
+# readonly LOCALS_SYNCED_MSG="All tracking branches are synchronized with their upstreams"
+readonly LOCALS_SYNCED_MSG="All tracking branches are synchronized with their upstreams All tracking branches are synchronized with their upstreams All tracking branches are synchronized with their upstreams All tracking branches are synchronized with their upstreams All tracking branches are synchronized with their upstreams"
 readonly BRANCH_SYNCED_MSG="This tracking branch is synchronized with it's upstream"
 readonly UNTRACKED_SYNCHED_MSG="These branches are synchronized with no tracking relationship"
 readonly REMOTES_SYNCED_MSG="All remote branches with identically named local branches are synchronized"
@@ -146,8 +147,8 @@ readonly REMOTES_SYNCED_MSG="All remote branches with identically named local br
 
 ## variables ##
 
-n_tracked_divergances=0
-were_any_branches_compared=0
+were_any_divergances=0
+were_any_compared=0
 local_w=0
 behind_w=0
 ahead_w=0
@@ -274,8 +275,8 @@ function EXIT # (err_msg)
 
 function Reset
 {
-  n_tracked_divergances=0
-  were_any_branches_compared=0
+  were_any_divergances=0
+  were_any_compared=0
   local_w=0
   behind_w=0
   ahead_w=0
@@ -311,8 +312,8 @@ function GenerateReport # (local_branch_name remote_branch_name)
        n_behind=$(echo $status | tr " " "\n" | grep -c '^>')
        n_ahead=$( echo $status | tr " " "\n" | grep -c '^<')
        n_divergances=$(($n_behind + $n_ahead))
-       n_tracked_divergances=$(($n_tracked_divergances + $n_divergances))
-       were_any_branches_compared=1
+       (($were_any_divergances + $n_divergances)) && were_any_divergances=1
+       were_any_compared=1
 
        # filter branches by status
        (($SHOW_ALL_UPSTREAM)) || (($n_divergances)) || return
@@ -365,32 +366,27 @@ function GenerateReport # (local_branch_name remote_branch_name)
 
 function PrintReport # (table_header_line synchronized_msg)
 {
-  header=$1
+  table_header_line=$1
   synchronized_msg=$2
-  available_w=$(( $(CurrentTtyW) - $ahead_w - $behind_w - $ALL_PADDING_W ))
-  n_notable_divergances=${#local_msgs[@]}
-  (( $were_any_branches_compared )) && !(( $n_tracked_divergances )) && all_in_sync=1 || \
-                                                                        all_in_sync=0
+  available_w=$(($(CurrentTtyW) - $ahead_w - $behind_w - $ALL_PADDING_W))
+  n_comparissons=${#local_msgs[@]}
+  (($were_any_compared)) && !(($were_any_divergances)) && all_in_sync=1 || all_in_sync=0
 
-  (( $available_w < 0            ))                            && return # should never happen
-  (( $n_notable_divergances == 0 )) && (( $all_in_sync == 0 )) && return # should never happen
+  (($available_w    <  0))                          && return # should never happen
+  (($n_comparissons == 0)) && (($all_in_sync == 0)) && return # should never happen
 
   # truncate column widths to fit
-  while (( $local_w + $remote_w > $available_w ))
-  do if   (($local_w > $remote_w))
-     then local_w=$(($local_w - 1))
-     elif (($remote_w > $local_w))
-     then remote_w=$(($remote_w - 1))
-     else local_w=$(($local_w - 1)) remote_w=$(($remote_w - 1))
-     fi
+  while (($local_w + $remote_w > $available_w))
+  do    (($local_w >= $remote_w)) && local_w=$(( $local_w  - 1))
+        (($local_w <= $remote_w)) && remote_w=$(($remote_w - 1))
   done
 
   # pretty print results
-  printf "\n  $header\n"
-  if (($n_notable_divergances))
+  printf "\n  $table_header_line\n"
+  if (($n_comparissons))
   then rule_w=$(($local_w + $behind_w + $ahead_w + $remote_w + $INNER_PADDING_W))
        PrintHRule $rule_w
-       for (( result_n = 0 ; result_n < $n_notable_divergances ; result_n++ ))
+       for (( result_n = 0 ; result_n < $n_comparissons ; result_n++ ))
        do PrintReportLine
        done
        PrintHRule $rule_w
@@ -400,7 +396,7 @@ function PrintReport # (table_header_line synchronized_msg)
   if (($all_in_sync))
   then l_border="$DELIM " r_border=" $DELIM"
        borders_pad_w=$(( ${#l_border} + ${#r_border} ))
-       wrap_w=$(( $(CurrentTtyW) - $MARGINS_PAD_W - $borders_pad_w ))
+       wrap_w=$(($(CurrentTtyW) - $MARGINS_PAD_W - $borders_pad_w))
        synchronized_msg=$(echo "$synchronized_msg" | fold -s -w $wrap_w | tr ' ' "$JOIN_CHAR")
        rule_w=0
        for line in $synchronized_msg

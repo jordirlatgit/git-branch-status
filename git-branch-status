@@ -146,7 +146,7 @@ readonly REMOTES_SYNCED_MSG="All remote branches with identically named local br
 
 ## variables ##
 
-n_tracked_differences=0
+n_tracked_divergances=0
 were_any_branches_compared=0
 local_w=0
 behind_w=0
@@ -274,7 +274,7 @@ function EXIT # (err_msg)
 
 function Reset
 {
-  n_tracked_differences=0
+  n_tracked_divergances=0
   were_any_branches_compared=0
   local_w=0
   behind_w=0
@@ -310,12 +310,12 @@ function GenerateReport # (local_branch_name remote_branch_name)
 
        n_behind=$(echo $status | tr " " "\n" | grep -c '^>')
        n_ahead=$( echo $status | tr " " "\n" | grep -c '^<')
-       n_differences=$(($n_behind + $n_ahead))
-       n_tracked_differences=$(($n_tracked_differences + $n_differences))
+       n_divergances=$(($n_behind + $n_ahead))
+       n_tracked_divergances=$(($n_tracked_divergances + $n_divergances))
        were_any_branches_compared=1
 
        # filter branches by status
-       (($SHOW_ALL_UPSTREAM)) || (($n_differences)) || return
+       (($SHOW_ALL_UPSTREAM)) || (($n_divergances)) || return
 
        # set data for branches with remote counterparts or arbitrary branches
        (($is_tracked_branch)) && color=$CTRACKING || color=$CDEFAULT
@@ -368,24 +368,29 @@ function PrintReport # (table_header_line synchronized_msg)
   header=$1
   synchronized_msg=$2
   available_w=$(( $(CurrentTtyW) - $ahead_w - $behind_w - $ALL_PADDING_W ))
-  n_notable_differences=${#local_msgs[@]}
-  (($were_any_branches_compared)) && !(($n_tracked_differences)) && all_in_sync=1 || all_in_sync=0
+  n_notable_divergances=${#local_msgs[@]}
+  (( $were_any_branches_compared )) && !(( $n_tracked_divergances )) && all_in_sync=1 || \
+                                                                        all_in_sync=0
 
-  (( $available_w < 0 ))                             && return # should never happen
-  !(( $n_notable_differences )) && !(( $all_in_sync )) && return # should never happen
+  (( $available_w < 0            ))                            && return # should never happen
+  (( $n_notable_divergances == 0 )) && (( $all_in_sync == 0 )) && return # should never happen
 
   # truncate column widths to fit
   while (( $local_w + $remote_w > $available_w ))
-  do    (( $local_w >= $remote_w )) && local_w=$((  $local_w  - 1 ))
-        (( $local_w <= $remote_w )) && remote_w=$(( $remote_w - 1 ))
+  do if   (($local_w > $remote_w))
+     then local_w=$(($local_w - 1))
+     elif (($remote_w > $local_w))
+     then remote_w=$(($remote_w - 1))
+     else local_w=$(($local_w - 1)) remote_w=$(($remote_w - 1))
+     fi
   done
 
   # pretty print results
   printf "\n  $header\n"
-  if (($n_notable_differences))
+  if (($n_notable_divergances))
   then rule_w=$(($local_w + $behind_w + $ahead_w + $remote_w + $INNER_PADDING_W))
        PrintHRule $rule_w
-       for (( result_n = 0 ; result_n < $n_notable_differences ; result_n++ ))
+       for (( result_n = 0 ; result_n < $n_notable_divergances ; result_n++ ))
        do PrintReportLine
        done
        PrintHRule $rule_w

@@ -343,37 +343,48 @@ function Init # (cli_args)
 
 function GenerateReports
 {
-  local synchronized_msg ; local is_tracked_branch ;
-
   if   [ "$COMPARE_BRANCH" ]
-  then is_tracked_branch=$(IsTrackedBranch $FILTER_BRANCH $COMPARE_BRANCH)
-       (($is_tracked_branch)) && synchronized_msg="$BRANCH_SYNCED_MSG" || synchronized_msg="$UNTRACKED_SYNCHED_MSG"
-
-       # compare sync status of arbitrary branches per cli args
-       GenerateReport $FILTER_BRANCH $COMPARE_BRANCH
-       PrintReport "$FILTER_BRANCH <-> $COMPARE_BRANCH" "$synchronized_msg"
-  elif !(( $SHOW_ALL_REMOTE )) || (( $SHOW_ALL_LOCAL ))
-  then [ "$FILTER_BRANCH" ] && synchronized_msg="$BRANCH_SYNCED_MSG" || synchronized_msg="$LOCALS_SYNCED_MSG"
-
-       # compare sync status of local branches to their upstreams
-       while read local upstream ; do GenerateReport $local $upstream ; done < <(GetLocalRefs) ;
-       PrintReport "local <-> upstream" "$synchronized_msg"
+  then CustomReport $(IsTrackedBranch $FILTER_BRANCH $COMPARE_BRANCH)
+  else (( !(( $SHOW_ALL_REMOTE )) || (( $SHOW_ALL_LOCAL )) )) && LocalReport
+       (( $SHOW_ALL_REMOTE                                 )) && RemoteReport
   fi
+}
 
-  if (( $SHOW_ALL_REMOTE )) && [ -z "$FILTER_BRANCH" ]
-  then synchronized_msg="$REMOTES_SYNCED_MSG"
+function CustomReport # (is_tracked_branch)
+{
+  local is_tracked_branch=$1
+  local synchronized_msg
+  (($is_tracked_branch)) && synchronized_msg="$BRANCH_SYNCED_MSG" || synchronized_msg="$UNTRACKED_SYNCHED_MSG"
 
-       # compare sync status of remote branches to local branches with the same names
-       for remote_repo in $(git remote)
-       do  while read remote_branch
-           do    local local_branch=${remote_branch#$remote_repo/}
+  # compare sync status of arbitrary branches per cli args
+  GenerateReport $FILTER_BRANCH $COMPARE_BRANCH
+  PrintReport "$FILTER_BRANCH <-> $COMPARE_BRANCH" "$synchronized_msg"
+}
 
-                 GenerateReport $local_branch $remote_branch
-           done < <(GetRemoteRefs $remote_repo)
+function LocalReport
+{
+  local synchronized_msg
+  [ "$FILTER_BRANCH" ] && synchronized_msg="$BRANCH_SYNCED_MSG" || synchronized_msg="$LOCALS_SYNCED_MSG"
 
-           PrintReport "local <-> $remote_repo" "$synchronized_msg"
-       done
-  fi
+  # compare sync status of local branches to their upstreams
+  while read local upstream ; do GenerateReport $local $upstream ; done < <(GetLocalRefs) ;
+  PrintReport "local <-> upstream" "$synchronized_msg"
+}
+
+function RemoteReport
+{
+  local synchronized_msg="$REMOTES_SYNCED_MSG"
+
+  # compare sync status of remote branches to local branches with the same names
+  for remote_repo in $(git remote)
+  do  while read remote_branch
+      do    local local_branch=${remote_branch#$remote_repo/}
+
+            GenerateReport $local_branch $remote_branch
+      done < <(GetRemoteRefs $remote_repo)
+
+      PrintReport "local <-> $remote_repo" "$synchronized_msg"
+  done
 }
 
 function GenerateReport # (base_branch compare_branch)
@@ -433,7 +444,7 @@ function GenerateReport # (base_branch compare_branch)
   fi
   local_msg="$( AppendHeadDate $base_branch         )"
   behind_msg=$( echo $behind_msg | sed "$TRIM_REGEX")
-  ahead_msg=$(  echo $behind_msg | sed "$TRIM_REGEX")
+  ahead_msg=$(  echo $ahead_msg  | sed "$TRIM_REGEX")
   remote_msg="$(AppendHeadDate $compare_branch      )"
 
   # populate lists

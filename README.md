@@ -18,8 +18,10 @@ A number of command-line switches exist, selecting various reports that compare 
   * The local branch 'master' is tracking remote branch 'origin/master'.
 * The "local <-> kd35a" section is itemizing all branches on the 'kd35a' remote. In this instance:
   * The local branch 'master' is 2 commits behind and 24 commits ahead of the remote branch 'kd35a/master'.
+  * The remote 'kd35a' has no other branches.
 * The "local <-> knovoselic" section is itemizing all branches on the 'knovoselic' remote. In this instance:
   * The local branch 'master' is 4 commits behind and 24 commits ahead of the remote branch 'knovoselic/master'.
+  * The remote 'knovoselic' has no other branches.
 * The "local <-> origin" section is itemizing all branches on the 'origin' remote. In this instance:
   * The remote branch 'origin/delete-me' is not checked-out locally.
   * The remote branch 'origin/master' is tracked by the local branch 'master'.
@@ -113,11 +115,13 @@ EXAMPLES:
 ```
 
 
-_NOTE: please direct comments, bug reports, feature requests, or PRs to one of the upstream repos:_
+_NOTE: please direct bug reports, feature requests, or PRs to one of the upstream repos:_
 * [https://github.com/bill-auger/git-branch-status/issues/][github-issues]
 * [https://notabug.org/bill-auger/git-branch-status/issues/][notabug-issues]
+* [https://pagure.io/git-branch-status/issues/][pagure-issues]
 
 
 [scrot]:          http://bill-auger.github.io/git-branch-status-scrot.png "git-branch-status screenshot"
 [github-issues]:  https://github.com/bill-auger/git-branch-status/issues/
 [notabug-issues]: https://notabug.org/bill-auger/git-branch-status/issues/
+[pagure-issues]:  https://pagure.io/git-branch-status/issues/

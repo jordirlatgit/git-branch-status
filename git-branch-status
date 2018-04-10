@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #  git-branch-status - print pretty git branch sync status reports
 #
 #  Copyright 2011      Jehiah Czebotar     <https://github.com/jehiah>
 #  Copyright 2013      Fredrik Strandin    <https://github.com/kd35a>
 #  Copyright 2014      Kristijan Novoselić <https://github.com/knovoselic>
-#  Copyright 2014-2017 bill-auger          <https://github.com/bill-auger>
+#  Copyright 2014-2018 bill-auger          <https://github.com/bill-auger>
 #
 #  git-branch-status is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License version 3
@@ -181,7 +181,6 @@ function AssertIsValidRepo
 
 function AssertHasCommits
 {
-  # TODO: does this fail if detached HEAD ?
   [ "$(git cat-file -t HEAD 2> /dev/null)" ] && echo 1 || echo 0
 }
 
@@ -274,28 +273,27 @@ function AppendHeadDate # (commit_ref)
   echo $date$commit
 }
 
-# function GetCommitMsg # (commit_ref)
-# {
-#   git log -n 1 --format=format:"%s" $1
-# }
-
 function CurrentTtyW
 {
-  stty -F /dev/tty size | cut -d ' ' -f 2
+  local tty_dims=$(stty -F /dev/tty size 2> /dev/null || stty -f /dev/tty size 2> /dev/null)
+  local tty_w=$(echo $tty_dims | cut -d ' ' -f 2)
+
+  (( $tty_w )) && echo "$tty_w" || echo "$MIN_TTY_W"
 }
 
 function PrintHRule # (rule_width)
 {
   local rule_w=$1
+  local h_rule="$(dd if=/dev/zero bs=$rule_w count=1 2> /dev/null | tr '\0' $HRULE_CHAR)"
 
-  printf "$MARGIN_PAD$(head -c $rule_w < /dev/zero | tr '\0' $HRULE_CHAR)\n"
+  echo "$MARGIN_PAD$h_rule"
 }
 
-function EXIT # (err_msg)
+function EXIT # (error_msg)
 {
-  local err_msg=$1
+  local error_msg=$1
 
-  echo "$err_msg" && exit
+  echo "fatal: $error_msg" && exit 1
 }
 
 
